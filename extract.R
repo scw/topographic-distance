@@ -8,29 +8,43 @@ require('rgdal')
 setwd("~/d/education/frog-pathogen")
 
 r <- raster("data/seki/dem/elev_met/hdr.adf")
-#r <- raster("data/ned/n37w119/grdn37w119_13_utm.tif")
+#r <- raster("data/seki/dem/elev_met.asc")
 
-# XXX Read in the polygon shapefile, reshape the centroid coordinates into coordinate pairs, to 
+# Read in the polygon shapefile, reshape the centroid coordinates into coordinate pairs, to 
 # be fed into a SpatialLines object -- this can be saved as a shapefile with sp, as an intermediate product.
 
 lakes <- readOGR(dsn="data/seki/lakes/SEKI_lakes.shp", layer="SEKI_lakes")
-#lines <- readOGR(dsn="/home/scw/drop/education/frog-pathogen/data/generated/lines-utm.shp", layer="lines-utm")
 
-for (x in c(1:10)) {
+lines <- list()
+d <- data.frame(ID=character(0), from_id=numeric(0), to_id=numeric(0))
+
+# compute the full line matrix
+for (i in c(1:10)) {
   # get two consecutive points for calculating the line. To do the distance matrix, you'd need
   # to compute the full m*n == (m*m-1)/2 set of lines.
-  centroids.line <- rbind(c(lakes$X_CENTER[x], lakes$Y_CENTER[x]), c(lakes$X_CENTER[x+1], lakes$Y_CENTER[x+1]))
+  lines[[i]] <- Lines(Line(rbind(c(lakes$X_CENTER[i], lakes$Y_CENTER[i]), c(lakes$X_CENTER[i+1], lakes$Y_CENTER[i+1]))), ID = as.character(i))
+  #attr <- rbind(attr, c(ID=as.character(i), from_id=lakes$LAKEID[i], to_id=lakes$LAKEID[i+1]))
+  d <- rbind(d, data.frame(as.character(i), lakes$LAKEID[i], lakes$LAKEID[i+1]))
+}
 
-  tmp <- SpatialLines(list(Lines(list(Line(centroids.line)), x)))
+sldf <- SpatialLinesDataFrame(SpatialLines(lines), d, match.ID = FALSE)
+
+if (FALSE) {
+for (i in c(1:10)) {
+  # get two consecutive points for calculating the line. To do the distance matrix, you'd need
+  # to compute the full m*n == (m*m-1)/2 set of lines.
+  lines[[i]] <- Lines(Line(rbind(c(lakes$X_CENTER[i], lakes$Y_CENTER[i]), c(lakes$X_CENTER[i+1], lakes$Y_CENTER[i+1]))), ID = as.character(i))
+  #attr <- rbind(attr, c(ID=as.character(i), from_id=lakes$LAKEID[i], to_id=lakes$LAKEID[i+1]))
+  d <- rbind(d, data.frame(as.character(i), lakes$LAKEID[i], lakes$LAKEID[i+1]))
+  #tmp <- SpatialLines(list(Lines(list(Line(centroids.line)), x)))
 
 # running this for 18 distances takes ~5minutes! That's ~17s per distance, 
 # with a full matrix we'd have 125000 calculations, or 590hr to run the whole set, which is 24 days...
 # actually, its worse than this: we'd have 7.1M calculations across the full set of lakes, though perhaps filteirng would reduce this to a more reasonable quantity...
 
-  system.time(elevations <- extract(r, tmp))
+  #system.time(elevations <- extract(r, tmp))
 }
-
-#   user  system elapsed 
+}
 #    392.63    0.45  396.41 
 # my guess is this is probably an order of magnitude faster in GRASS...
 
@@ -38,7 +52,7 @@ for (x in c(1:10)) {
 #elevations <- extract(r, lines)
 
 # x and y can be pulled from the sp object containing the shapefile itself
-# XXX actually, this only pulls the coordinates for the _points_ need the coordinates from the extract locations...
+# TODO actually, this only pulls the coordinates for the _points_ need the coordinates from the extract locations...
 
 # actually smackually, we don't even need this -- the sampling grid is COMPLETELY REGULAR so the x and y components are always the same... only Z is varying. So we just need to do the maths for the paths, and we're g2g.
 
