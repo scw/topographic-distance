@@ -29,7 +29,6 @@ for (i in c(1:10)) {
 
 sldf <- SpatialLinesDataFrame(SpatialLines(lines), d, match.ID = FALSE)
 
-if (FALSE) {
 for (i in c(1:10)) {
   # get two consecutive points for calculating the line. To do the distance matrix, you'd need
   # to compute the full m*n == (m*m-1)/2 set of lines.
@@ -42,9 +41,9 @@ for (i in c(1:10)) {
 # with a full matrix we'd have 125000 calculations, or 590hr to run the whole set, which is 24 days...
 # actually, its worse than this: we'd have 7.1M calculations across the full set of lakes, though perhaps filteirng would reduce this to a more reasonable quantity...
 
-  #system.time(elevations <- extract(r, tmp))
+  system.time(elevations <- extract(r, tmp))
 }
-}
+
 #    392.63    0.45  396.41 
 # my guess is this is probably an order of magnitude faster in GRASS...
 
@@ -69,4 +68,3 @@ dist.elev <- cumsum(c.elev[1:s.elev])
 pct.diff <- (dist.elev[s.elev - 1] - dist.e2d) / dist.e2d * 100
 # here, 4.734% greater via 3d routine
 }
-
