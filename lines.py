@@ -56,15 +56,18 @@ def CellValue(band, ndv, geotransform, x, y):
 
 # in projected units; here meters
 DISTANCE_LIMIT = 30000
+# how far apart should the points be between sample locations?
+SEGMENT_DISTANCE = 10
 
+# shapefile containing geometries we're interested in
 infile = "../data/generated/frog-lake-lines.shp"
+# raster DEM of 'z' values
+inraster = "../data/seki/dem/elev_met.tif"
 
 ds = ogr.Open(infile)
 lyr = ds.GetLayer(0)
 total = 0
 
-# raster DEM
-inraster = "../data/seki/dem/elev_met.tif"
 source_ds = gdal.Open(inraster)
 if source_ds is None:
   print 'Could not open image file'
@@ -85,7 +88,7 @@ print "fid,topographic_dist,linear_dist,increase"
 for i in range(lyr.GetFeatureCount()):
     feat = lyr.GetFeature(i)
 
-    feat.GetGeometryRef().Segmentize(10)
+    feat.GetGeometryRef().Segmentize(SEGMENT_DISTANCE)
     
     pt_count = feat.GetGeometryRef().GetPointCount()
   
@@ -102,11 +105,9 @@ for i in range(lyr.GetFeatureCount()):
         for j in range(0, pt_count):
             (x, y, z) = feat.GetGeometryRef().GetPoint(j)
              
-            # XXX
-            # what we're really doing here is computing the 'z' value which we should store within
-            # a new shapefile -- we'll then have a list of triples, and can compute the distances between
-            # each set of triples iteratively -- summing this is what we ultimately want to perform.
-
+            # What we're really doing here is computing the 'z' value which we can add to a 
+            # list of triples, and then compute the distances between each pair of triples -- 
+            # summing these 3d distances is what we ultimately want.
             z = CellValue(band, ndv, geotransform, x, y)
 
             dest = numpy.array((x,y,z))
